@@ -1,29 +1,35 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
+import { NotesProvider, useNotes } from '@/context/notes-context'
+import { Stack } from 'expo-router'
+import { ActivityIndicator, View } from 'react-native'
 
-import { NotesProvider } from "@/context/notes-context";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+function RootNavigator() {
+  const { session, loading } = useNotes()
 
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    )
+  }
 
   return (
+    <Stack screenOptions={{ headerShown: false }}>
+      {session ? (
+        <Stack.Screen name="(tabs)" />
+      ) : (
+        <Stack.Screen name="auth" />
+      )}
+      <Stack.Screen name="new" />
+      <Stack.Screen name="note/[id]" />
+    </Stack>
+  )
+}
+
+export default function RootLayout() {
+  return (
     <NotesProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="note/[id]" options={{ title: "Notat" }} />
-          <Stack.Screen name="new" options={{ title: "Nytt notat" }} />
-          <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <RootNavigator />
     </NotesProvider>
-  );
+  )
 }

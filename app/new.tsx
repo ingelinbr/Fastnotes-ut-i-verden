@@ -1,120 +1,85 @@
-import { useNotes } from "@/context/notes-context";
-import { router } from "expo-router";
-import React, { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-
-const PURPLE = "#6D28D9";
-const BG = "#F6F4FF";
-const CARD = "#FFFFFF";
-const BORDER = "rgba(0,0,0,0.08)";
-const SUBTLE = "rgba(0,0,0,0.55)";
+import { ThemedText } from '@/components/themed-text'
+import { ThemedView } from '@/components/themed-view'
+import { useNotes } from '@/context/notes-context'
+import { useThemeColor } from '@/hooks/use-theme-color'
+import { router } from 'expo-router'
+import { useState } from 'react'
+import { Alert, Pressable, StyleSheet, TextInput } from 'react-native'
 
 export default function NewNoteScreen() {
-  const { addNote } = useNotes();
+  const { addNote } = useNotes()
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const tintColor = useThemeColor({}, 'tint')
+  const borderColor = useThemeColor({}, 'border')
 
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+  const handleSave = async () => {
+    if (!title.trim() || !content.trim()) {
+      Alert.alert('Feil', 'Du må fylle ut både tittel og innhold')
+      return
+    }
 
-  const canSave = title.trim().length > 0 || body.trim().length > 0;
-
-  const onSave = () => {
-    addNote(title.trim(), body.trim());
-    router.back();
-  };
+    await addNote(title, content)
+    router.back()
+  }
 
   return (
-    <View style={{ flex: 1, backgroundColor: BG }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <Text style={styles.pageTitle}>Skriv et nytt notat</Text>
-          <Text style={styles.pageSubtitle}>Tittel er valgfritt.</Text>
+    <ThemedView style={styles.container}>
+      <ThemedText style={styles.heading}>New Note</ThemedText>
 
-          <View style={styles.card}>
-            <Text style={styles.label}>Tittel</Text>
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              placeholder="F.eks. Handleliste"
-              style={styles.input}
-              returnKeyType="next"
-            />
+      <TextInput
+        style={[styles.input, { borderColor }]}
+        placeholder="Title"
+        value={title}
+        onChangeText={setTitle}
+      />
 
-            <Text style={[styles.label, { marginTop: 12 }]}>Innhold</Text>
-            <TextInput
-              value={body}
-              onChangeText={setBody}
-              placeholder="Skriv notatet her…"
-              style={[styles.input, styles.textArea]}
-              multiline
-              textAlignVertical="top"
-            />
-          </View>
+      <TextInput
+        style={[styles.input, styles.textArea, { borderColor }]}
+        placeholder="Content"
+        value={content}
+        onChangeText={setContent}
+        multiline
+        textAlignVertical="top"
+      />
 
-          <Pressable
-            onPress={onSave}
-            disabled={!canSave}
-            style={({ pressed }) => [
-              styles.saveBtn,
-              !canSave && styles.saveBtnDisabled,
-              pressed && canSave && { transform: [{ scale: 0.99 }] },
-            ]}
-          >
-            <Text style={styles.saveText}>Lagre</Text>
-          </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
-  );
+      <Pressable style={[styles.button, { borderColor: tintColor }]} onPress={handleSave}>
+        <ThemedText style={[styles.buttonText, { color: tintColor }]}>Save note</ThemedText>
+      </Pressable>
+    </ThemedView>
+  )
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 24, gap: 12 },
-  pageTitle: { fontSize: 22, fontWeight: "900" },
-  pageSubtitle: { marginTop: -6, fontSize: 13, color: SUBTLE },
-
-  card: {
-    backgroundColor: CARD,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
+  container: {
+    flex: 1,
+    padding: 20,
+    paddingTop: 60,
   },
-
-  label: { fontSize: 13, fontWeight: "800", color: SUBTLE, marginBottom: 8 },
+  heading: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
   input: {
     borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: 'white',
+  },
+  textArea: {
+    height: 160,
+  },
+  button: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
     fontSize: 16,
-    backgroundColor: "rgba(255,255,255,0.9)",
+    fontWeight: '600',
   },
-  textArea: { minHeight: 220 },
-
-  saveBtn: {
-    backgroundColor: PURPLE,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  saveBtnDisabled: { opacity: 0.45 },
-  saveText: { color: "white", fontSize: 16, fontWeight: "900" },
-});
+})
