@@ -6,6 +6,7 @@ export type Note = {
   id: string
   title: string
   content: string | null
+  image_url: string | null
   user_id: string
   user_email: string | null
   created_at: string
@@ -17,7 +18,7 @@ type NotesContextType = {
   notes: Note[]
   loading: boolean
   fetchNotes: () => Promise<void>
-  addNote: (title: string, content: string) => Promise<void>
+  addNote: (title: string, content: string, imageUrl?: string | null) => Promise<void>
   updateNote: (id: string, title: string, content: string) => Promise<void>
   deleteNote: (id: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<{ error: any }>
@@ -32,23 +33,59 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setLoading(false)
+  const fetchNotes = async () => {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
 
-      if (data.session) {
-        fetchNotes()
+    if (userError) throw userError
+
+    if (!user) {
+      setNotes([])
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    setNotes(data ?? [])
+  }
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      setSession(data.session)
+
+      try {
+        if (data.session) {
+          await fetchNotes()
+        } else {
+          setNotes([])
+        }
+      } catch (error) {
+        console.log('FETCH NOTES ERROR:', error)
+      } finally {
+        setLoading(false)
       }
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
 
-      if (session) {
-        fetchNotes()
-      } else {
-        setNotes([])
+      try {
+        if (session) {
+          await fetchNotes()
+        } else {
+          setNotes([])
+        }
+      } catch (error) {
+        console.log('AUTH STATE CHANGE ERROR:', error)
+      } finally {
+        setLoading(false)
       }
     })
 
@@ -57,40 +94,26 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const fetchNotes = async () => {
+  const addNote = async (title: string, content: string, imageUrl?: string | null) => {
     const {
       data: { user },
+      error: userError,
     } = await supabase.auth.getUser()
 
-    if (!user) return
-
-    const { data, error } = await supabase
-      .from('notes')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (!error && data) {
-      setNotes(data)
-    }
-  }
-
-  const addNote = async (title: string, content: string) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) return
+    if (userError) throw userError
+    if (!user) throw new Error('Ingen innlogget bruker')
 
     const { error } = await supabase.from('notes').insert({
       title,
       content,
+      image_url: imageUrl ?? null,
       user_id: user.id,
       user_email: user.email,
     })
 
-    if (!error) {
-      await fetchNotes()
-    }
+    if (error) throw error
+
+    await fetchNotes()
   }
 
   const updateNote = async (id: string, title: string, content: string) => {
@@ -103,9 +126,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       })
       .eq('id', id)
 
-    if (!error) {
-      await fetchNotes()
-    }
+    if (error) throw error
+
+    await fetchNotes()
   }
 
   const deleteNote = async (id: string) => {
@@ -114,26 +137,18 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       .delete()
       .eq('id', id)
 
-    if (!error) {
-      await fetchNotes()
-    }
+    if (error) throw error
+
+    await fetchNotes()
   }
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-
+    const { error } = await supabase.auth.signUp({ email, password })
     return { error }
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error }
   }
 

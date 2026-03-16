@@ -1,9 +1,23 @@
 import { NotesProvider, useNotes } from '@/context/notes-context'
+import { registerForLocalNotificationsAsync } from '@/lib/notifications'
 import { Stack } from 'expo-router'
+import { useEffect } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 
 function RootNavigator() {
   const { session, loading } = useNotes()
+
+  useEffect(() => {
+    const setupNotifications = async () => {
+      try {
+        await registerForLocalNotificationsAsync()
+      } catch (error) {
+        console.log('Kunne ikke sette opp lokale notifikasjoner:', error)
+      }
+    }
+
+    setupNotifications()
+  }, [])
 
   if (loading) {
     return (
@@ -15,11 +29,7 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {session ? (
-        <Stack.Screen name="(tabs)" />
-      ) : (
-        <Stack.Screen name="auth" />
-      )}
+      {session ? <Stack.Screen name="(tabs)" /> : <Stack.Screen name="auth" />}
       <Stack.Screen name="new" />
       <Stack.Screen name="note/[id]" />
     </Stack>

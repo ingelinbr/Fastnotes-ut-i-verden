@@ -1,66 +1,25 @@
-Cloud Note:
-Cloud Note er en mobilapplikasjon utviklet med React Native (Expo) og Supabase.
-Applikasjonen lar brukere opprette konto, logge inn og administrere notater som lagres i en skybasert database.
+Assignment 3 – Native Functions
 
-Appen bruker Supabase for autentisering og database, og implementerer et komplett CRUD-system for notater.
+Denne oppgaven er en videreutvikling av notat-appen fra Assignment 2.
+Målet er å implementere native funksjoner som kamera, bildevalg fra galleri, bildeopplasting til Supabase Storage og notifikasjoner.
 
-Funksjonalitet
-- Autentisering
-    Brukere kan opprette konto med e-post og passord.
+Implementerte krav
+Kamera-integrasjon
+- (5%) Permissions: Appen ber om tillatelse fra operativsystemet til å bruke kamera og enhetens bildegalleri før disse funksjonene brukes.
+- (10%) Capture & Pick: Brukeren kan velge mellom å ta et nytt bilde direkte i appen eller velge et eksisterende bilde fra galleriet.
+- (5%) Preview: Når et bilde er valgt eller tatt, vises det i en forhåndsvisning i notatvinduet før brukeren lagrer notatet.
 
-    Brukere må logge inn før de får tilgang til appen.
+Storage & Validering
+- (10%) Client-side Validation: Før opplasting kontrollerer appen at bildet er under 15MB og at filformatet er JPG, PNG eller WebP.
+- (10%) Supabase Upload: Bildet lastes opp til Supabase Storage i en bucket med unike filnavn for å unngå at filer overskriver hverandre.
+- (5%) DB Linking: Etter opplasting lagres URL-en til bildet i notes-tabellen i databasen slik at bildet knyttes til riktig notat.
 
-    Brukere kan logge ut.
+UI / UX (Bilde & Feedback)
+- (10%) Loading States: Når et bilde lastes opp eller et notat lagres, vises en spinner og lagre-knappen deaktiveres midlertidig.
+- (10%) Aspect Ratio Handling: Bildene vises sammen med notatene og skaleres riktig slik at de ikke strekkes.
+- (10%) Error Messaging: Appen viser tydelige feilmeldinger dersom bildet er for stort, har feil format eller hvis opplastingen feiler.
 
-    Supabase håndterer sikker lagring av credentials og session.
-
-    E-postbekreftelse er implementert med en tilpasset email template i Supabase.
-
-
-Notathåndtering
-
-Appen implementerer et komplett     CRUD-system:
-- Create
-    Brukeren kan opprette et nytt notat med:
-    - Tittel
-    - Tekst
-    - Notatet lagres i databasen med:
-    - Bruker som opprettet notatet
-    - Tidspunkt for siste endring
-
-- Read
-    Alle notater vises på hovedskjermen "Jobb Notater".
-    For hvert notat vises:
-    - Tittel
-    - Innhold
-    - Hvilken bruker som opprettet notatet
-    - Tidspunkt for siste oppdatering
-
-- Update
-    Brukere kan redigere eksisterende notater.
-    Når et notat oppdateres lagres et nytt updated_at tidspunkt.
-
-- Delete
-    Brukere kan slette notater. Før sletting må brukeren bekrefte handlingen.
-
-
-Database
-
-Tabellen notes inneholder følgende felter:
-
-Felt	    Beskrivelse
-id	        unik ID for notatet
-title	    tittel på notatet
-content	    tekstinnhold
-user_id	    ID til brukeren som opprettet notatet
-user_email	e-post til brukeren
-created_at	tidspunkt notatet ble opprettet
-updated_at	tidspunkt notatet sist ble endret
-
-
-Supabase Setup
-Prosjektet krever et Supabase-prosjekt.
-
-Miljøvariabler lagres i .env:
-    EXPO_PUBLIC_SUPABASE_URL=your_project_url
-    EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+Notifikasjoner
+- (5%) System Permissions: Appen ber om tillatelse fra operativsystemet til å sende notifikasjoner til brukeren.
+- (5% av 15%) Trigger Logic – Lokal løsning: Vi har valgt den enkle lokale trigger-løsningen. Når brukeren lagrer et nytt notat og supabase.insert er vellykket, sendes en lokal notifikasjon til samme enhet.
+- (5%) Content Injection: Notifikasjonen inneholder tittelen på det nye notatet, for eksempel: “Nytt notat: [Notatets tittel]”.

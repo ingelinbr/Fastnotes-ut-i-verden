@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view'
 import { useNotes } from '@/context/notes-context'
 import { useThemeColor } from '@/hooks/use-theme-color'
 import { router } from 'expo-router'
-import { FlatList, Pressable, StyleSheet, View } from 'react-native'
+import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native'
 
 export default function HomeScreen() {
   const { notes, signOut } = useNotes()
@@ -40,6 +40,14 @@ export default function HomeScreen() {
             <ThemedText style={[styles.noteUser, { color: secondaryTextColor }]}>
               Created by: {item.user_email ?? 'Unknown'}
             </ThemedText>
+
+            {item.image_url && (
+              <Image
+                source={{ uri: item.image_url }}
+                style={styles.noteImage}
+                resizeMode="cover"
+              />
+            )}
 
             <ThemedText
               numberOfLines={2}
@@ -100,6 +108,13 @@ const styles = StyleSheet.create({
   noteUser: {
     fontSize: 12,
     marginBottom: 6,
+  },
+  noteImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 12,
+    marginBottom: 10,
+    backgroundColor: '#e5e5e5',
   },
   noteContent: {
     fontSize: 14,

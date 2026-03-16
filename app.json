@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "CloudNote",
-    "slug": "CloudNote",
+    "name": "NativeFunctions",
+    "slug": "NativeFunctions",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Appen trenger tilgang til kamera for å ta bilde til notater.",
+        "NSPhotoLibraryUsageDescription": "Appen trenger tilgang til bildegalleriet for å velge bilde til notater.",
+        "NSUserNotificationsUsageDescription": "Appen ønsker å sende varsler når nye notater blir lagt til."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +24,20 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.NativeFunctions"
     },
     "web": {
       "output": "static",
@@ -39,7 +57,20 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Appen trenger tilgang til kamera for å ta bilde til notater."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#ffffff"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

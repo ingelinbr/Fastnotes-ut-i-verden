@@ -4,7 +4,7 @@ import { useNotes } from '@/context/notes-context'
 import { useThemeColor } from '@/hooks/use-theme-color'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Pressable, StyleSheet, TextInput } from 'react-native'
+import { Alert, Image, Pressable, StyleSheet, TextInput } from 'react-native'
 
 export default function NoteDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -14,9 +14,13 @@ export default function NoteDetailsScreen() {
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   const tintColor = useThemeColor({}, 'tint')
   const borderColor = useThemeColor({}, 'border')
   const destructiveColor = useThemeColor({}, 'destructive')
+  const secondaryTextColor = useThemeColor({}, 'secondaryText')
 
   useEffect(() => {
     if (note) {
@@ -26,19 +30,26 @@ export default function NoteDetailsScreen() {
   }, [note])
 
   const handleSave = async () => {
-    if (!note) return
+    if (!note || isSaving) return
 
     if (!title.trim() || !content.trim()) {
       Alert.alert('Feil', 'Du må fylle ut både tittel og innhold')
       return
     }
 
-    await updateNote(note.id, title, content)
-    router.back()
+    try {
+      setIsSaving(true)
+      await updateNote(note.id, title.trim(), content.trim())
+      router.back()
+    } catch (error) {
+      Alert.alert('Feil', 'Kunne ikke oppdatere notatet')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleDelete = async () => {
-    if (!note) return
+    if (!note || isDeleting) return
 
     Alert.alert('Slett notat', 'Er du sikker på at du vil slette notatet?', [
       { text: 'Avbryt', style: 'cancel' },
@@ -46,8 +57,15 @@ export default function NoteDetailsScreen() {
         text: 'Slett',
         style: 'destructive',
         onPress: async () => {
-          await deleteNote(note.id)
-          router.replace('/(tabs)')
+          try {
+            setIsDeleting(true)
+            await deleteNote(note.id)
+            router.replace('/(tabs)')
+          } catch (error) {
+            Alert.alert('Feil', 'Kunne ikke slette notatet')
+          } finally {
+            setIsDeleting(false)
+          }
         },
       },
     ])
@@ -70,6 +88,7 @@ export default function NoteDetailsScreen() {
         placeholder="Title"
         value={title}
         onChangeText={setTitle}
+        editable={!isSaving && !isDeleting}
       />
 
       <TextInput
@@ -79,14 +98,56 @@ export default function NoteDetailsScreen() {
         onChangeText={setContent}
         multiline
         textAlignVertical="top"
+        editable={!isSaving && !isDeleting}
       />
 
-      <Pressable style={[styles.button, { borderColor: tintColor }]} onPress={handleSave}>
-        <ThemedText style={[styles.buttonText, { color: tintColor }]}>Save changes</ThemedText>
+      {note.image_url && (
+        <>
+          <ThemedText style={styles.imageLabel}>Bilde</ThemedText>
+          <Image
+            source={{ uri: note.image_url }}
+            style={styles.noteImage}
+            resizeMode="cover"
+          />
+        </>
+      )}
+
+      <Pressable
+        style={[
+          styles.button,
+          { borderColor: tintColor },
+          isSaving && styles.buttonDisabled,
+        ]}
+        onPress={handleSave}
+        disabled={isSaving || isDeleting}
+      >
+        <ThemedText
+          style={[
+            styles.buttonText,
+            { color: isSaving ? secondaryTextColor : tintColor },
+          ]}
+        >
+          {isSaving ? 'Saving...' : 'Save changes'}
+        </ThemedText>
       </Pressable>
 
-      <Pressable style={[styles.deleteButton, { borderColor: destructiveColor }]} onPress={handleDelete}>
-        <ThemedText style={[styles.deleteButtonText, { color: destructiveColor }]}>Delete note</ThemedText>
+      <Pressable
+        style={[
+          styles.deleteButton,
+          { borderColor: destructiveColor },
+          isDeleting && styles.buttonDisabled,
+        ]}
+        onPress={handleDelete}
+        disabled={isSaving || isDeleting}
+      >
+        <ThemedText
+          style={[
+            styles.deleteButtonText,
+            { color: isDeleting ? secondaryTextColor : destructiveColor },
+          ]}
+        >
+          {isDeleting ? 'Deleting...' : 'Delete note'}
+        </ThemedText>
       </Pressable>
     </ThemedView>
   )
@@ -113,6 +174,19 @@ const styles = StyleSheet.create({
   textArea: {
     height: 160,
   },
+  imageLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  noteImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: '#e5e5e5',
+  },
   button: {
     borderWidth: 1,
     borderRadius: 10,
@@ -120,16 +194,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
   deleteButton: {
     borderWidth: 1,
     borderRadius: 10,
     padding: 14,
     alignItems: 'center',
     marginTop: 12,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   deleteButtonText: {
     fontSize: 16,
