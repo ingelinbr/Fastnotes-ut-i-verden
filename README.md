@@ -21,5 +21,5 @@ UI / UX (Bilde & Feedback)
 
 Notifikasjoner
 - (5%) System Permissions: Appen ber om tillatelse fra operativsystemet til å sende notifikasjoner til brukeren.
-- (5% av 15%) Trigger Logic – Lokal løsning: Vi har valgt den enkle lokale trigger-løsningen. Når brukeren lagrer et nytt notat og supabase.insert er vellykket, sendes en lokal notifikasjon til samme enhet.
+- (5% av 15%) Trigger Logic – Lokal løsning: Jeg har valgt den enkle lokale trigger-løsningen. Når brukeren lagrer et nytt notat og supabase.insert er vellykket, sendes en lokal notifikasjon til samme enhet.
 - (5%) Content Injection: Notifikasjonen inneholder tittelen på det nye notatet, for eksempel: “Nytt notat: [Notatets tittel]”.
