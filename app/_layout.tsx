@@ -12,7 +12,7 @@ function RootNavigator() {
       try {
         await registerForLocalNotificationsAsync()
       } catch (error) {
-        console.log('Kunne ikke sette opp lokale notifikasjoner:', error)
+        // console.log('Kunne ikke sette opp lokale notifikasjoner:', error)
       }
     }
 

@@ -13,11 +13,16 @@ export type Note = {
   updated_at: string
 }
 
+const PAGE_SIZE = 5
+
 type NotesContextType = {
   session: Session | null
   notes: Note[]
   loading: boolean
+  loadingMore: boolean
+  hasMore: boolean
   fetchNotes: () => Promise<void>
+  loadMoreNotes: () => Promise<void>
   addNote: (title: string, content: string, imageUrl?: string | null) => Promise<void>
   updateNote: (id: string, title: string, content: string) => Promise<void>
   deleteNote: (id: string) => Promise<void>
@@ -32,6 +37,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [page, setPage] = useState(0)
 
   const fetchNotes = async () => {
     const {
@@ -39,21 +47,78 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       error: userError,
     } = await supabase.auth.getUser()
 
-    if (userError) throw userError
+    if (userError) {
+      throw userError
+    }
 
     if (!user) {
       setNotes([])
+      setPage(0)
+      setHasMore(false)
       return
     }
+
+    const start = 0
+    const end = PAGE_SIZE - 1
 
     const { data, error } = await supabase
       .from('notes')
       .select('*')
       .order('created_at', { ascending: false })
+      .range(start, end)
 
-    if (error) throw error
+    if (error) {
+      throw error
+    }
 
-    setNotes(data ?? [])
+    const fetchedNotes = data ?? []
+
+    setNotes(fetchedNotes)
+    setPage(1)
+    setHasMore(fetchedNotes.length === PAGE_SIZE)
+  }
+
+  const loadMoreNotes = async () => {
+    if (loadingMore || !hasMore) return
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError) {
+      throw userError
+    }
+
+    if (!user) {
+      setHasMore(false)
+      return
+    }
+
+    try {
+      setLoadingMore(true)
+
+      const start = page * PAGE_SIZE
+      const end = start + PAGE_SIZE - 1
+
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(start, end)
+
+      if (error) {
+        throw error
+      }
+
+      const newNotes = data ?? []
+
+      setNotes((prev) => [...prev, ...newNotes])
+      setPage((prev) => prev + 1)
+      setHasMore(newNotes.length === PAGE_SIZE)
+    } finally {
+      setLoadingMore(false)
+    }
   }
 
   useEffect(() => {
@@ -65,25 +130,25 @@ export function NotesProvider({ children }: { children: ReactNode }) {
           await fetchNotes()
         } else {
           setNotes([])
+          setHasMore(false)
+          setPage(0)
         }
-      } catch (error) {
-        console.log('FETCH NOTES ERROR:', error)
       } finally {
         setLoading(false)
       }
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      setSession(newSession)
 
       try {
-        if (session) {
+        if (newSession) {
           await fetchNotes()
         } else {
           setNotes([])
+          setHasMore(false)
+          setPage(0)
         }
-      } catch (error) {
-        console.log('AUTH STATE CHANGE ERROR:', error)
       } finally {
         setLoading(false)
       }
@@ -132,10 +197,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   }
 
   const deleteNote = async (id: string) => {
-    const { error } = await supabase
-      .from('notes')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('notes').delete().eq('id', id)
 
     if (error) throw error
 
@@ -162,7 +224,10 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         session,
         notes,
         loading,
+        loadingMore,
+        hasMore,
         fetchNotes,
+        loadMoreNotes,
         addNote,
         updateNote,
         deleteNote,

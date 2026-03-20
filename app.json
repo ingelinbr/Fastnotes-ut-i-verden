@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "NativeFunctions",
-    "slug": "NativeFunctions",
+    "name": "Fastnotes ut i verden",
+    "slug": "fastnotes-ut-i-verden",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -26,11 +26,6 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "CAMERA",
-        "READ_MEDIA_IMAGES",
-        "POST_NOTIFICATIONS",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
         "CAMERA",
         "READ_MEDIA_IMAGES",
         "POST_NOTIFICATIONS",
@@ -75,6 +70,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a34196fe-99b2-4c88-8c03-eeb2044a8387"
+      }
     }
   }
 }

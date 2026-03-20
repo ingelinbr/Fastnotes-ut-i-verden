@@ -1,19 +1,27 @@
 import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
-import { useNotes } from '@/context/notes-context'
+import { type Note, useNotes } from '@/context/notes-context'
 import { useThemeColor } from '@/hooks/use-theme-color'
+import { supabase } from '@/lib/supabase'
 import { router, useLocalSearchParams } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
-import { Alert, Image, Pressable, StyleSheet, TextInput } from 'react-native'
+import { useEffect, useState } from 'react'
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  StyleSheet,
+  TextInput
+} from 'react-native'
 
 export default function NoteDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const { notes, updateNote, deleteNote } = useNotes()
+  const { session, updateNote, deleteNote } = useNotes()
 
-  const note = useMemo(() => notes.find((n) => n.id === id), [notes, id])
-
+  const [note, setNote] = useState<Note | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -23,11 +31,37 @@ export default function NoteDetailsScreen() {
   const secondaryTextColor = useThemeColor({}, 'secondaryText')
 
   useEffect(() => {
-    if (note) {
-      setTitle(note.title)
-      setContent(note.content ?? '')
+    const loadNote = async () => {
+      if (!id) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+
+        const { data, error } = await supabase
+          .from('notes')
+          .select('*')
+          .eq('id', id)
+          .single()
+
+        if (error) {
+          throw error
+        }
+
+        setNote(data)
+        setTitle(data?.title ?? '')
+        setContent(data?.content ?? '')
+      } catch {
+        Alert.alert('Feil', 'Kunne ikke hente notatet')
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [note])
+
+    loadNote()
+  }, [id])
 
   const handleSave = async () => {
     if (!note || isSaving) return
@@ -41,7 +75,7 @@ export default function NoteDetailsScreen() {
       setIsSaving(true)
       await updateNote(note.id, title.trim(), content.trim())
       router.back()
-    } catch (error) {
+    } catch {
       Alert.alert('Feil', 'Kunne ikke oppdatere notatet')
     } finally {
       setIsSaving(false)
@@ -61,7 +95,7 @@ export default function NoteDetailsScreen() {
             setIsDeleting(true)
             await deleteNote(note.id)
             router.replace('/(tabs)')
-          } catch (error) {
+          } catch {
             Alert.alert('Feil', 'Kunne ikke slette notatet')
           } finally {
             setIsDeleting(false)
@@ -69,6 +103,25 @@ export default function NoteDetailsScreen() {
         },
       },
     ])
+  }
+
+  if (!session) {
+    return (
+      <ThemedView style={styles.container}>
+        <ThemedText testID="auth-guard-message">
+          Du må være logget inn for å se notatet.
+        </ThemedText>
+      </ThemedView>
+    )
+  }
+
+  if (loading) {
+    return (
+      <ThemedView style={[styles.container, styles.centered]}>
+        <ActivityIndicator testID="note-loader" size="large" />
+        <ThemedText style={styles.loadingText}>Laster notat...</ThemedText>
+      </ThemedView>
+    )
   }
 
   if (!note) {
@@ -84,6 +137,7 @@ export default function NoteDetailsScreen() {
       <ThemedText style={styles.heading}>Edit Note</ThemedText>
 
       <TextInput
+        testID="edit-title-input"
         style={[styles.input, { borderColor }]}
         placeholder="Title"
         value={title}
@@ -92,6 +146,7 @@ export default function NoteDetailsScreen() {
       />
 
       <TextInput
+        testID="edit-content-input"
         style={[styles.input, styles.textArea, { borderColor }]}
         placeholder="Content"
         value={content}
@@ -113,6 +168,7 @@ export default function NoteDetailsScreen() {
       )}
 
       <Pressable
+        testID="save-note-changes-button"
         style={[
           styles.button,
           { borderColor: tintColor },
@@ -132,6 +188,7 @@ export default function NoteDetailsScreen() {
       </Pressable>
 
       <Pressable
+        testID="delete-note-button"
         style={[
           styles.deleteButton,
           { borderColor: destructiveColor },
@@ -159,10 +216,18 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 60,
   },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   heading: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
   },
   input: {
     borderWidth: 1,

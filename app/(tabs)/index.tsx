@@ -3,13 +3,59 @@ import { ThemedView } from '@/components/themed-view'
 import { useNotes } from '@/context/notes-context'
 import { useThemeColor } from '@/hooks/use-theme-color'
 import { router } from 'expo-router'
-import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native'
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native'
 
 export default function HomeScreen() {
-  const { notes, signOut } = useNotes()
+  const {
+    session,
+    notes,
+    loading,
+    hasMore,
+    loadingMore,
+    loadMoreNotes,
+    signOut,
+  } = useNotes()
+
   const tintColor = useThemeColor({}, 'tint')
   const borderColor = useThemeColor({}, 'border')
   const secondaryTextColor = useThemeColor({}, 'secondaryText')
+
+  if (loading) {
+    return (
+      <ThemedView style={[styles.container, styles.centered]}>
+        <ActivityIndicator testID="notes-loader" size="large" />
+        <ThemedText style={styles.loadingText}>Laster notater...</ThemedText>
+      </ThemedView>
+    )
+  }
+
+  if (!session) {
+    return (
+      <ThemedView style={[styles.container, styles.centered]}>
+        <ThemedText style={styles.title}>Jobb Notater</ThemedText>
+        <ThemedText testID="auth-guard-message" style={styles.guardText}>
+          Du må være logget inn for å se notatene.
+        </ThemedText>
+
+        <Pressable
+          testID="go-to-login-button"
+          style={[styles.addButton, { borderColor: tintColor }]}
+          onPress={() => router.replace('/auth')}
+        >
+          <ThemedText style={[styles.addButtonText, { color: tintColor }]}>
+            Gå til innlogging
+          </ThemedText>
+        </Pressable>
+      </ThemedView>
+    )
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -17,6 +63,7 @@ export default function HomeScreen() {
         <ThemedText style={styles.title}>Jobb Notater</ThemedText>
 
         <Pressable
+          testID="logout-button"
           onPress={async () => {
             await signOut()
             router.replace('/auth')
@@ -29,9 +76,13 @@ export default function HomeScreen() {
       <FlatList
         data={notes}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<ThemedText>No notes yet.</ThemedText>}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <ThemedText testID="empty-notes-message">No notes yet.</ThemedText>
+        }
         renderItem={({ item }) => (
           <Pressable
+            testID={`note-card-${item.id}`}
             style={[styles.noteCard, { borderColor }]}
             onPress={() => router.push(`/note/${item.id}`)}
           >
@@ -61,9 +112,42 @@ export default function HomeScreen() {
             </ThemedText>
           </Pressable>
         )}
+        ListFooterComponent={
+          hasMore ? (
+            <Pressable
+              testID="load-more-button"
+              style={[
+                styles.loadMoreButton,
+                { borderColor: tintColor },
+                loadingMore && styles.buttonDisabled,
+              ]}
+              onPress={loadMoreNotes}
+              disabled={loadingMore}
+            >
+              {loadingMore ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator size="small" color={tintColor} />
+                  <ThemedText
+                    style={[
+                      styles.loadMoreText,
+                      { color: secondaryTextColor, marginLeft: 8 },
+                    ]}
+                  >
+                    Laster...
+                  </ThemedText>
+                </View>
+              ) : (
+                <ThemedText style={[styles.loadMoreText, { color: tintColor }]}>
+                  Last mer
+                </ThemedText>
+              )}
+            </Pressable>
+          ) : null
+        }
       />
 
       <Pressable
+        testID="add-note-button"
         style={[styles.addButton, { borderColor: tintColor }]}
         onPress={() => router.push('/new')}
       >
@@ -80,6 +164,10 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     marginTop: 40,
     marginBottom: 20,
@@ -93,6 +181,19 @@ const styles = StyleSheet.create({
   },
   link: {
     fontSize: 16,
+  },
+  guardText: {
+    marginTop: 12,
+    marginBottom: 20,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+  },
+  listContent: {
+    paddingBottom: 12,
   },
   noteCard: {
     padding: 16,
@@ -133,5 +234,25 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadMoreButton: {
+    marginTop: 4,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  loadMoreText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

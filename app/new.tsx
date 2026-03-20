@@ -23,7 +23,7 @@ import {
 } from 'react-native'
 
 export default function NewNoteScreen() {
-  const { addNote } = useNotes()
+  const { addNote, session } = useNotes()
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -42,8 +42,7 @@ export default function NewNoteScreen() {
       if (image) {
         setSelectedImage(image)
       }
-    } catch (error) {
-      console.log('PICK IMAGE ERROR:', error)
+    } catch {
       Alert.alert('Feil', 'Kunne ikke velge bilde fra galleri')
     }
   }
@@ -56,8 +55,7 @@ export default function NewNoteScreen() {
       if (image) {
         setSelectedImage(image)
       }
-    } catch (error) {
-      console.log('TAKE PHOTO ERROR:', error)
+    } catch {
       Alert.alert('Feil', 'Kunne ikke ta bilde')
     }
   }
@@ -105,8 +103,6 @@ export default function NewNoteScreen() {
       await sendLocalNewNoteNotification(trimmedTitle)
       router.back()
     } catch (error: any) {
-      console.log('SAVE ERROR:', error)
-
       const errorMessage =
         error?.message ??
         error?.error_description ??
@@ -118,11 +114,23 @@ export default function NewNoteScreen() {
     }
   }
 
+  if (!session) {
+    return (
+      <ThemedView style={styles.container}>
+        <ThemedText style={styles.heading}>Nytt notat</ThemedText>
+        <ThemedText testID="auth-guard-message">
+          Du må være logget inn for å opprette notater.
+        </ThemedText>
+      </ThemedView>
+    )
+  }
+
   return (
     <ThemedView style={styles.container}>
       <ThemedText style={styles.heading}>Nytt notat</ThemedText>
 
       <TextInput
+        testID="title-input"
         style={[styles.input, { borderColor }]}
         placeholder="Tittel"
         value={title}
@@ -131,6 +139,7 @@ export default function NewNoteScreen() {
       />
 
       <TextInput
+        testID="content-input"
         style={[styles.input, styles.textArea, { borderColor }]}
         placeholder="Innhold"
         value={content}
@@ -142,6 +151,7 @@ export default function NewNoteScreen() {
 
       <View style={styles.imageActions}>
         <Pressable
+          testID="pick-image-button"
           style={[
             styles.secondaryButton,
             { borderColor: tintColor },
@@ -161,6 +171,7 @@ export default function NewNoteScreen() {
         </Pressable>
 
         <Pressable
+          testID="take-photo-button"
           style={[
             styles.secondaryButton,
             { borderColor: tintColor },
@@ -191,6 +202,7 @@ export default function NewNoteScreen() {
           />
 
           <Pressable
+            testID="remove-image-button"
             style={[
               styles.removeButton,
               { borderColor },
@@ -205,6 +217,7 @@ export default function NewNoteScreen() {
       )}
 
       <Pressable
+        testID="save-note-button"
         style={[
           styles.button,
           { borderColor: tintColor },
@@ -215,7 +228,7 @@ export default function NewNoteScreen() {
       >
         {isSaving ? (
           <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color={tintColor} />
+            <ActivityIndicator testID="save-loader" size="small" color={tintColor} />
             <ThemedText
               style={[
                 styles.buttonText,

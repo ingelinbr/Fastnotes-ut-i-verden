@@ -58,16 +58,16 @@ export async function uploadImageToSupabase(
 
     validateImage(image, ext, contentType)
 
-    console.log('UPLOAD START')
-    console.log('image.uri:', image.uri)
-    console.log('image.fileName:', image.fileName)
-    console.log('image.fileSize:', image.fileSize)
-    console.log('image.mimeType:', image.mimeType)
-    console.log('ext:', ext)
-    console.log('contentType:', contentType)
+    // console.log('UPLOAD START')
+    // console.log('image.uri:', image.uri)
+    // console.log('image.fileName:', image.fileName)
+    // console.log('image.fileSize:', image.fileSize)
+    // console.log('image.mimeType:', image.mimeType)
+    // console.log('ext:', ext)
+    // console.log('contentType:', contentType)
 
     const fileInfo = await FileSystem.getInfoAsync(image.uri)
-    console.log('fileInfo:', fileInfo)
+    // console.log('fileInfo:', fileInfo)
 
     if (!fileInfo.exists) {
       throw new Error('Bildefilen finnes ikke på enheten.')
@@ -85,7 +85,7 @@ export async function uploadImageToSupabase(
       .toString(36)
       .slice(2)}.${ext}`
 
-    console.log('Uploading to path:', filePath)
+    // console.log('Uploading to path:', filePath)
 
     const { data, error } = await supabase.storage
       .from('note-images')
@@ -94,8 +94,8 @@ export async function uploadImageToSupabase(
         upsert: false,
       })
 
-    console.log('UPLOAD RESULT data:', data)
-    console.log('UPLOAD RESULT error:', error)
+    // console.log('UPLOAD RESULT data:', data)
+    // console.log('UPLOAD RESULT error:', error)
 
     if (error) {
       throw new Error(`Opplasting feilet: ${error.message}`)
@@ -105,14 +105,14 @@ export async function uploadImageToSupabase(
       .from('note-images')
       .getPublicUrl(data.path)
 
-    console.log('PUBLIC URL:', publicUrlData.publicUrl)
+    // console.log('PUBLIC URL:', publicUrlData.publicUrl)
 
     return {
       path: data.path,
       imageUrl: publicUrlData.publicUrl,
     }
   } catch (error: any) {
-    console.log('UPLOAD IMAGE ERROR:', error)
+    // console.log('UPLOAD IMAGE ERROR:', error)
     throw new Error(error?.message ?? 'Kunne ikke laste opp bildet.')
   }
 }
